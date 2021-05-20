@@ -13,7 +13,7 @@ alter database pg_testdb set timezone to 'Europe/Istanbul';
 CREATE EXTENSION if not exists citext;
 
 /* email validasyonu için regex kontrolü */
-CREATE DOMAIN dmn_email AS citext CHECK (VALUE ~ '^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$');
+create domain dmn_email as citext check( value ~'^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$');
 
 
 -- yıl,ay,gün olarak aldığı parametreleri date olarak geri döner
@@ -130,7 +130,7 @@ insert into test_default_ymd(name)
 values ('Ali');
 
 select *
-from test_default_ymd
+from test_default_ymd;
 
 /*
     id, name , year, month, day
