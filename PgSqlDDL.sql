@@ -13,7 +13,7 @@ alter database pg_testdb set timezone to 'Europe/Istanbul';
 CREATE EXTENSION if not exists citext;
 
 /* email validasyonu için regex kontrolü */
-create domain dmn_email as citext check( value ~'^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$');
+create domain dmn_email as citext check ( value ~ '^[A-Za-z0-9._%-]+@[A-Za-z0-9.-]+[.][A-Za-z]+$');
 
 
 -- yıl,ay,gün olarak aldığı parametreleri date olarak geri döner
@@ -243,4 +243,54 @@ create domain dmn_positivenumber as numeric(15, 6) check ( value > 0 );
 comment on domain dmn_positivenumber is 'Number must be positive';
 
 
+/*
+    tablolarımızda genellikle değiştirme tarihi gibi bir alan tutarız.
+    bu alanlarıda genellikle uygulama programımız servisimiz vs. ile güncelleriz bunun yerine
+    eğer tablolarımızda bu alanın adını standart bir ad ile gidiyorsak.
+    Örnek: modified_date gibi genel bir trigger yazarak bu işi database e bırakabiliriz hem böylelikle
+    uygulama içerisinden değilde update sql ile db editör, ide vs olsun update ettiğimiz kayıtlarında
+    modified_date alanları güncellenmiş olur
+    Kaynak : https://stackoverflow.com/questions/52426656/track-last-modification-timestamp-of-a-row-in-postgres
+
+*/
+
+
+create or replace function trigger_set_timestamp()
+    returns trigger as
+$$
+begin
+    new.modified_date = now();
+    return new;
+end;
+$$ language plpgsql;
+
+
+create table mytable
+(
+    id            serial not null primary key,
+    content       text,
+    modified_date timestamp
+);
+
+create trigger set_timestamp
+    before update
+    on mytable
+    for each row
+execute function trigger_set_timestamp();
+
+
+
+insert into mytable (content)
+values ('aa');
+
+select *
+from mytable;
+
+
+update mytable
+set content = 'zzz'
+where id = 1;
+
+select *
+from mytable;
 
