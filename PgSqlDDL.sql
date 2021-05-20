@@ -294,3 +294,68 @@ where id = 1;
 select *
 from mytable;
 
+/*
+    Postgresql uuid-ossp extension
+    UUID :Universally unique identifier
+    Evrensel olarak benzersiz bir tanımlayıcı,
+    bilgisayar sistemlerinde bilgi için kullanılan 128 bitlik bir etikettir.
+    Genel olarak benzersiz tanımlayıcı terimi, genellikle Microsoft tarafından oluşturulan yazılımlarda da kullanılır.
+    Standart yöntemlere göre oluşturulduğunda, UUID'ler pratik amaçlar için benzersizdir.
+    Kaynak: Wikipedia
+    Windows sistemlerinde guid olarak ta geçer
+    Postgresql de uuid üretmek için(uid-ossp) extension kuracağız.
+    Daha sonra oluşturacağımız tabloya row_uuid alanı ekleyip default uuid almasını sağlayacağız.
+
+*/
+create extension if not exists "uuid-ossp";
+
+create table persons
+(
+    id            serial       not null primary key,
+    person_name   varchar(100) not null, -- name reserved keyword
+    email         dmn_email    not null,
+    pswhash       text         not null,
+    active        bool         not null default false,
+    row_uuid      uuid         not null default uuid_generate_v4(),
+    created_date  timestamp    not null default current_timestamp,
+    modified_date timestamp,
+    unique (email)
+);
+
+insert into persons(person_name, email, pswhash)
+values ('İbrahim Arslan', 'adres@guzelmail.com', '123456');
+
+select row_uuid
+from persons;
+
+-- f51bea9f-51e9-402a-b82c-24674b433f49
+
+/*
+    Postgresql pgcrypto extension
+    Pgcrypto modülü PostgreSQL için kriptografik işlevler sağlar.
+    https://www.postgresql.org/docs/8.3/pgcrypto.html
+    Biz burada  email ve pswhash alanlarından oluşan testuser tablosu oluşturup
+    kullanıcının şifresini doğrudan text olarak değil encrypt(şifreleyerek) ederek saklayacağız.
+    gen_salt('bf') ile Blowfish algoritmasını kullanacağımı belirtmiş oluyorum
+*/
+
+create extension pgcrypto;
+
+create table testuser
+(
+    id      serial primary key not null,
+    email   dmn_email,
+    pswhash text
+);
+
+
+insert into testuser (email, pswhash)
+values ('zamazingo2@guzelmail.com',
+        crypt('istebenimsifrem', gen_salt('bf')));
+
+select pswhash from testuser;
+
+--sorgu ile kullanımı
+select * from testuser where email='zamazingo@guzelmail.com' and pswhash= crypt('istebenimsifrem',pswhash)
+
+
